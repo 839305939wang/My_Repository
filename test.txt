@@ -1,1 +1,82 @@
-nihao this is a test.txt
+function find(arr){
+    //构造新的数组，避免污染原型链
+    var newArray = function(data){
+        var result = Array.apply(this,data);
+        //条件查询
+        result.__proto__.where = function(arr){
+            var resultVal = [];
+            for(var key in arr){
+               var value = arr[key];
+               var isRegExp = (Object.prototype.toString.call(value)=="[object RegExp]")?true:false;
+               for(var i = 0;i < this.length;i++){
+                   var item = this[i];
+                   if(key in item){
+                       if(isRegExp){//条件是正则表达式
+                          if(!value.test(item[key])){
+                          }else{
+                            resultVal.push(item)
+                          }
+                       }else{//普通条件
+                        if(value!=item[key]){
+                            resultVal.push(item[key])
+                          }
+                       }
+                      
+                   }
+               }
+            }
+            return new newArray(resultVal);             
+        }
+        //排序
+        result.__proto__.orderBy = function(){
+            var attr = arguments[0];//排名属性
+            var flag = arguments[1];//顺序or倒序 
+            var returnValue = this;    
+            function sort(arr,cb){//冒泡排序
+                var length = arr.length;
+                for(var i=0;i<length-1;i++){
+                    for(var j=0;j<length-i-1;j++){
+                        var now = arr[j];
+                        var next = arr[j+1];
+                        if(cb(now,next)>0){
+                            var temp = arr[j];
+                            arr[j] = arr[j+1];
+                            arr[j+1] = temp;
+                        }
+                    }
+                }
+                return arr;
+            }
+            switch(flag){
+                case 'desc'://降序
+                    returnValue = sort(this,function(a,b){
+                        return b[attr] - a[attr];
+                    })  
+                    break;
+                case "asc"://升序
+                    returnValue = sort(this,function(a,b){
+                        return a[attr]-b[attr];
+                    }) 
+                    break;
+                default:
+                    returnValue = this;
+            }
+           
+            return returnValue
+        }
+
+        return result
+    }
+    return  new newArray(arr)
+}
+
+var data = [
+	{ userId: 8, title: 'title1'},
+	{ userId: 11, title: 'other'},
+	{ userId: 15, title: null},
+	{ userId: 19, title: 'title2'}
+];
+var result = find(data).where({
+	"title": /\d$/
+}).orderBy('userId', 'desc')
+console.log(result)
